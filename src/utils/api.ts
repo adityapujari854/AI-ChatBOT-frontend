@@ -20,8 +20,8 @@ export const sendMessageToBackend = async (
     };
 
     const url = backendURL
-      ? `${backendURL}/api/chat`
-      : '/api/chat/stream'; // Local fallback
+      ? `${backendURL}/api/v1/chat`
+      : '/api/v1/chat/stream'; // <-- updated fallback
 
     const response = await axios.post(url, payload);
 
@@ -39,7 +39,7 @@ export const fetchChatHistory = async (
   sessionId: string
 ): Promise<{ user: string; ai: string }[]> => {
   try {
-    const response = await axios.get(`${backendURL}/api/chat/history`, {
+    const response = await axios.get(`${backendURL}/api/v1/chat/history`, {
       params: { session_id: sessionId },
     });
 
@@ -59,7 +59,7 @@ export const fetchSessions = async (userId: string): Promise<{
   created_at: string;
 }[]> => {
   try {
-    const response = await axios.get(`${backendURL}/api/chat/sessions`, {
+    const response = await axios.get(`${backendURL}/api/v1/chat/sessions`, {
       params: { user_id: userId },
     });
 
