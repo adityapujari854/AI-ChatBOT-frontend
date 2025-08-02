@@ -1,4 +1,4 @@
-import "./globals.css"; // adjust if needed
+import "../styles/globals.css"; // adjust if needed
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import ClientScripts from "../components/ClientScripts"; // adjust path as per your structure
