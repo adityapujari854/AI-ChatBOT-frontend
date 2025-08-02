@@ -1,9 +1,48 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "../styles/globals.css";
 import type { Viewport } from "next";
-import { useEffect } from "react";
+import dynamic from "next/dynamic";
 import ThemeToggle from "../components/ThemeToggle";
-import React from "react";
+
+// ✅ Dynamically import ClientScripts (inline client-only component)
+const ClientScripts = dynamic(() =>
+  Promise.resolve(function ClientScriptsWrapper() {
+    // Marking this dynamic component as client
+    if (typeof window !== "undefined") {
+      // Service worker
+      window.addEventListener("load", () => {
+        navigator.serviceWorker?.register("/sw.js")
+          .then(reg => console.log("✅ Service Worker registered:", reg))
+          .catch(err => console.error("❌ Service Worker failed:", err));
+      });
+
+      const preventZoom = (e) => {
+        if (e.ctrlKey || e.metaKey) e.preventDefault();
+      };
+
+      const preventKeys = (e) => {
+        const zoomKeys = ["+", "-", "="];
+        const devKeys = ["F12", "I", "J", "U"];
+        if ((e.ctrlKey || e.metaKey) && zoomKeys.includes(e.key)) e.preventDefault();
+        if (
+          e.key === "F12" ||
+          (e.ctrlKey && e.shiftKey && devKeys.includes(e.key)) ||
+          (e.ctrlKey && e.key === "U")
+        ) {
+          e.preventDefault();
+        }
+      };
+
+      window.addEventListener("wheel", preventZoom, { passive: false });
+      window.addEventListener("keydown", preventKeys);
+      window.addEventListener("contextmenu", (e) => e.preventDefault());
+      document.addEventListener("selectstart", (e) => e.preventDefault());
+    }
+
+    return null;
+  }),
+  { ssr: false }
+);
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,69 +66,6 @@ export const metadata = {
   description: "A full-stack AI chatbot using Next.js and FastAPI",
 };
 
-// ✅ Inline client component
-function ClientScripts() {
-  useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker
-          .register("/sw.js")
-          .then((registration) =>
-            console.log("✅ Service Worker registered:", registration)
-          )
-          .catch((error) =>
-            console.error("❌ Service Worker registration failed:", error)
-          );
-      });
-    }
-
-    const preventZoom = (e: WheelEvent | KeyboardEvent) => {
-      if ((e as WheelEvent).ctrlKey || (e as KeyboardEvent).metaKey) {
-        e.preventDefault();
-      }
-    };
-
-    window.addEventListener("wheel", preventZoom, { passive: false });
-    window.addEventListener("keydown", (e) => {
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        (e.key === "+" || e.key === "-" || e.key === "=")
-      ) {
-        e.preventDefault();
-      }
-
-      if (
-        e.key === "F12" ||
-        (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J")) ||
-        (e.ctrlKey && e.key === "U")
-      ) {
-        e.preventDefault();
-      }
-    });
-
-    window.addEventListener("contextmenu", (e) => e.preventDefault());
-    document.addEventListener("selectstart", (e) => e.preventDefault());
-
-    return () => {
-      window.removeEventListener("wheel", preventZoom);
-      window.removeEventListener("keydown", preventZoom as any);
-    };
-  }, []);
-
-  return null;
-}
-
-// Mark only the inner part as client
-const ClientWrapper = React.memo(function Wrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <ThemeToggle />
-      <ClientScripts />
-      {children}
-    </>
-  );
-});
-
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -106,12 +82,10 @@ export default function RootLayout({
             `,
           }}
         />
-
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="./nimbus_logo.png" type="image/png" sizes="32x32" />
         <meta name="description" content="A full-stack AI chatbot using Next.js and FastAPI" />
         <title>NIMBUS</title>
-
         <style>{`
           * {
             user-select: none;
@@ -120,11 +94,12 @@ export default function RootLayout({
           }
         `}</style>
       </head>
-
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased bg-gray-50`}
       >
-        <ClientWrapper>{children}</ClientWrapper>
+        <ThemeToggle />
+        {children}
+        <ClientScripts />
       </body>
     </html>
   );
