@@ -1,10 +1,9 @@
-"use client";
-
 import { Geist, Geist_Mono } from "next/font/google";
-import { useEffect } from "react";
 import "../styles/globals.css";
 import type { Viewport } from "next";
-import ThemeToggle from "../components/ThemeToggle"; // Adjust if needed
+import { useEffect } from "react";
+import ThemeToggle from "../components/ThemeToggle";
+import React from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,22 +27,22 @@ export const metadata = {
   description: "A full-stack AI chatbot using Next.js and FastAPI",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
-
-  // ✅ Protection + Service Worker Registration
+// ✅ Inline client component
+function ClientScripts() {
   useEffect(() => {
-    // Service Worker
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js")
-          .then(registration => console.log("✅ Service Worker registered:", registration))
-          .catch(error => console.error("❌ Service Worker registration failed:", error));
+        navigator.serviceWorker
+          .register("/sw.js")
+          .then((registration) =>
+            console.log("✅ Service Worker registered:", registration)
+          )
+          .catch((error) =>
+            console.error("❌ Service Worker registration failed:", error)
+          );
       });
     }
 
-    // Block Zoom
     const preventZoom = (e: WheelEvent | KeyboardEvent) => {
       if ((e as WheelEvent).ctrlKey || (e as KeyboardEvent).metaKey) {
         e.preventDefault();
@@ -52,11 +51,13 @@ export default function RootLayout({
 
     window.addEventListener("wheel", preventZoom, { passive: false });
     window.addEventListener("keydown", (e) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === "+" || e.key === "-" || e.key === "=")) {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        (e.key === "+" || e.key === "-" || e.key === "=")
+      ) {
         e.preventDefault();
       }
 
-      // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
       if (
         e.key === "F12" ||
         (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J")) ||
@@ -66,10 +67,7 @@ export default function RootLayout({
       }
     });
 
-    // Block Right Click
     window.addEventListener("contextmenu", (e) => e.preventDefault());
-
-    // Block Text Selection
     document.addEventListener("selectstart", (e) => e.preventDefault());
 
     return () => {
@@ -78,10 +76,26 @@ export default function RootLayout({
     };
   }, []);
 
+  return null;
+}
+
+// Mark only the inner part as client
+const ClientWrapper = React.memo(function Wrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <ThemeToggle />
+      <ClientScripts />
+      {children}
+    </>
+  );
+});
+
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <head>
-        {/* Set theme early */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -93,13 +107,11 @@ export default function RootLayout({
           }}
         />
 
-        {/* Manifest and Icons */}
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="./nimbus_logo.png" type="image/png" sizes="32x32" />
         <meta name="description" content="A full-stack AI chatbot using Next.js and FastAPI" />
         <title>NIMBUS</title>
 
-        {/* CSS to block text selection */}
         <style>{`
           * {
             user-select: none;
@@ -112,11 +124,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased bg-gray-50`}
       >
-        {/* Theme Toggle if needed */}
-        <ThemeToggle />
-
-        {/* Main app */}
-        {children}
+        <ClientWrapper>{children}</ClientWrapper>
       </body>
     </html>
   );
