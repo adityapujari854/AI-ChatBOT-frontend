@@ -21,7 +21,7 @@ export const sendMessageToBackend = async (
 
     const url = backendURL
       ? `${backendURL}/api/v1/chat`
-      : '/api/v1/chat/stream'; // <-- updated fallback
+      : '/api/v1/chat/stream';
 
     const response = await axios.post(url, payload);
 
@@ -63,7 +63,8 @@ export const fetchSessions = async (userId: string): Promise<{
       params: { user_id: userId },
     });
 
-    return response.data.sessions || [];
+    // Backend returns a list directly, not { sessions: [...] }
+    return response.data || [];
   } catch (error) {
     console.error('Error fetching sessions:', error);
     return [];
